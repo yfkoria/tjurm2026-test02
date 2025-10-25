@@ -29,7 +29,43 @@ std::unordered_map<int, cv::Rect> roi_color(const cv::Mat& input) {
      *      4. 将颜色 和 矩形位置 存入 map 中
      */
     std::unordered_map<int, cv::Rect> res;
-    // IMPLEMENT YOUR CODE HERE
-
+    cv::Mat gray, binary;
+    cv::cvtColor(input, gray, cv::COLOR_BGR2GRAY);
+    cv::threshold(gray, binary, 0, 255, cv::THRESH_BINARY_INV);
+     
+    std::vector<std::vector<cv::Point>> contours;
+    std::vector<cv::Vec4i> hierarchy;
+    cv::findContours(binary, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+    std::vector<cv::Rect> rects;
+    for (size_t i = 0; i < contours.size(); i++) {
+        double area = cv::contourArea(contours[i]);
+        if (area < 1000) continue;
+        std::vector<cv::Point> approx;
+        double peri = cv::arcLength(contours[i], true);
+        cv::approxPolyDP(contours[i], approx, 0.02 * peri, true);
+        
+        if (approx.size() == 4 && cv::isContourConvex(approx)) {
+            cv::Rect rect = cv::boundingRect(contours[i]);
+            rects.push_back(rect);
+        }
+    }
+     for (const auto& rect : rects) {
+        cv::Mat roi = input(rect);
+        cv::Scalar mean_color = cv::mean(roi);
+        double blue = mean_color[0];
+        double green = mean_color[1];
+        double red = mean_color[2];
+        int color_type = -1;
+        if (blue > green && blue > red) {
+            color_type = 0;
+        } else if (green > blue && green > red) {
+            color_type = 1;
+        } else if (red > blue && red > green) {
+            color_type = 2;
+        }
+        if (color_type != -1) {
+            res[color_type] = rect;
+        }
+    }
     return res;
 }

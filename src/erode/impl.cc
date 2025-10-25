@@ -2,6 +2,19 @@
 
 
 std::vector<cv::Mat> erode(const cv::Mat& src_erode, const cv::Mat& src_dilate) {
+    cv::Mat dst_erode,dst_dilate;
+    cv::Mat gray_erode,gray_dilate;
+    if (src_erode.channels() == 3) cv::cvtColor(src_erode, gray_erode, cv::COLOR_BGR2GRAY);
+    else gray_erode = src_erode.clone();
+    if (src_dilate.channels() == 3) cv::cvtColor(src_dilate, gray_dilate, cv::COLOR_BGR2GRAY);
+    else gray_dilate = src_dilate.clone();
+    cv::Mat binary_erode, binary_dilate;
+    cv::threshold(gray_erode, binary_erode, 50, 255, cv::THRESH_BINARY);
+    cv::threshold(gray_dilate, binary_dilate, 50, 255, cv::THRESH_BINARY);
+    cv::Mat erode_kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(7,7)), dilate_kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(12,12));
+    cv::erode(binary_erode, dst_erode, erode_kernel);
+    cv::dilate(binary_dilate, dst_dilate, dilate_kernel);
+    return {dst_erode, dst_dilate};
     /**
      * TODO: 先将图像转换为灰度图像, 然后二值化，然后进行腐蚀操作，具体内容：
      *  1. 将彩色图片 src_erode 转换为灰度图像
@@ -43,9 +56,6 @@ std::vector<cv::Mat> erode(const cv::Mat& src_erode, const cv::Mat& src_dilate) 
      *     2. dilate 之后的图像中，图中的小脚被消除了(类似答案中的样子)
      *     以上两个检查点需要自己检查，满足条件 则输入 p 通过, 否则输入 f 表示不通过
      */
-    cv::Mat dst_erode, dst_dilate;
-
+    
     // TODO: 在这里实现你的代码
-
-    return {dst_erode, dst_dilate};
 }
