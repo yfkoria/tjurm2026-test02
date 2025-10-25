@@ -31,40 +31,27 @@ std::unordered_map<int, cv::Rect> roi_color(const cv::Mat& input) {
     std::unordered_map<int, cv::Rect> res;
     cv::Mat gray, binary;
     cv::cvtColor(input, gray, cv::COLOR_BGR2GRAY);
-    cv::threshold(gray, binary, 0, 255, cv::THRESH_BINARY_INV);
-     
+    cv::threshold(gray, binary, 0, 255, cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
     std::vector<std::vector<cv::Point>> contours;
     std::vector<cv::Vec4i> hierarchy;
     cv::findContours(binary, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-    std::vector<cv::Rect> rects;
-    for (size_t i = 0; i < contours.size(); i++) {
-        double area = cv::contourArea(contours[i]);
-        if (area < 1000) continue;
-        std::vector<cv::Point> approx;
-        double peri = cv::arcLength(contours[i], true);
-        cv::approxPolyDP(contours[i], approx, 0.02 * peri, true);
-        
-        if (approx.size() == 4 && cv::isContourConvex(approx)) {
-            cv::Rect rect = cv::boundingRect(contours[i]);
-            rects.push_back(rect);
-        }
-    }
-     for (const auto& rect : rects) {
+    for (const auto& contour : contours) {
+        cv::Rect rect = cv::boundingRect(contour);
         cv::Mat roi = input(rect);
-        cv::Scalar mean_color = cv::mean(roi);
-        double blue = mean_color[0];
-        double green = mean_color[1];
-        double red = mean_color[2];
-        int color_type = -1;
-        if (blue > green && blue > red) {
-            color_type = 0;
-        } else if (green > blue && green > red) {
-            color_type = 1;
-        } else if (red > blue && red > green) {
-            color_type = 2;
+        cv::Scalar mean_bgr = cv::mean(roi);
+        double b = mean_bgr[0];
+        double g = mean_bgr[1];
+        double r = mean_bgr[2];
+        int color_label = -1;
+        if (b > g && b > r) {
+            color_label = 0; 
+        } else if (g > b && g > r) {
+            color_label = 1; 
+        } else if (r > b && r > g) {
+            color_label = 2; 
         }
-        if (color_type != -1) {
-            res[color_type] = rect;
+        if (color_label != -1) {
+            res[color_label] = rect;
         }
     }
     return res;
